@@ -30,7 +30,7 @@ function C = SISO_minSum_layered_decoder(r,H,nlayer,niter,Offset)
         end
 
     end    
-    C = (C<0); % mapping from [-1,1] to [1 0];
+%     C = (C<0); % mapping from [-1,1] to [1 0];
 end
 
 function [C,L] = SISO_minSum_row_operation(C,H,L_old,Offset)

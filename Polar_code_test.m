@@ -5,7 +5,7 @@ close all;
 crcg = fliplr([1 1 1 0 0 0 1 0 0 0 0 1]);
 crcL = length(crcg)-1;
 
-List_decoding_or_Not = 1;
+List_decoding_or_Not = 0;
 
 N = 128;
 load('Polar_reliability.mat');

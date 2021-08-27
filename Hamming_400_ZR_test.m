@@ -21,7 +21,7 @@ x_Rx = x_Tx;
 
 % error_idx = [3 103];
 % x_Rx(error_idx) = -0.3*x_Rx(error_idx);
-SNR = 10;
+SNR = 6;
 noise_power = 10*log10((1/(10^(SNR/10))));
 x_Rx = x_Rx + wgn(1,length(x_Rx),noise_power,'dBW','real');
 
@@ -33,14 +33,14 @@ stem(x_Tx(1:num_block_M)); hold on; stem(x_Rx(1:num_block_M));
 
 nlayer = 3;
 niter = 16;
-Offset = 1e-1;
+Offset = 1e-2;
 
 
 C = [];
 for idx = 1:m
     C_temp = SISO_minSum_layered_decoder(x_Rx((idx-1)*num_block_M+1:idx*num_block_M),...
         Hamming_H,nlayer,niter,Offset);
-    C = [C, C_temp];
+    C = [C, C_temp<0];
 end
 nEr1 = sum(abs(Cin-(x_Rx<0)));
 nEr2 = sum(abs(Cin-(C)));
