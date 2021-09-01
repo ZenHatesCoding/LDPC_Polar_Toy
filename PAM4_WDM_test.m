@@ -6,17 +6,17 @@ close all;
 clear
 
 m = 256;
-nC = 4; % number of channel
+nC = 2; % number of channel
 SE = 2;
 
 LBC_or_Polar = 1; % 1 LBC (LN block code) 2 & polar code
-% stupid trick
-% enable block grouping
-Enable_WL_interleaving = 0;
-num_block_interleave = 4;
+
+Enable_WL_interleaving = 1;
+num_block_interleave = 16;
 switch LBC_or_Polar
     case 1
         Enable_SD_decoder = 1;
+            SD_decoder_type = 2; % 1 minSum decoder 2 chase II decoder
         Enable_HD_decoder = 1;
         num_block_K = 119;
 
@@ -79,7 +79,8 @@ x_Tx = tx_PAM4_mod(~Cin);
 
 
 %% channel noise loading
-SNR = [18 14 18 18];
+SNR_good = 14;
+SNR = [SNR_good 14 14 14];
 SNR = SNR(1:nC);
 noise_power = 10.*log10((1./(10.^(SNR./10))));
 x_Tx_mat = reshape(x_Tx,num_block_interleave*nC,[]);
@@ -138,24 +139,29 @@ switch LBC_or_Polar
             % channels
             nEr1 = [];
             nEr2 = [];
-            L_Rx_wdm_afterSD = zeros(size(L_Rx_wdm));
+%             L_Rx_wdm_afterSD = zeros(size(L_Rx_wdm));
             for jdx = 1:nC
                 x_Rx = x_Rx_wdm(jdx,:);
                 L_Rx = L_Rx_wdm(jdx,:);
                 % trick
                 L_Rx = L_Rx-mean(L_Rx);
                 L_Rx = pwr_normalization(L_Rx);
+
                 C = [];
                 
                 for idx = 1:m*SE
                     L_Rx_block = L_Rx((idx-1)*num_block_M+1:idx*num_block_M);
-                    C_temp = SISO_minSum_layered_decoder(L_Rx_block,...
-                        Hamming_H,nlayer,niter,Offset);
-%                     C_temp = decode_LDPC(L_Rx_block,...
-%                         Hamming_H,niter);
-                    C = [C, C_temp<0];
-%                     L_Rx_wdm_afterSD(jdx,(idx-1)*num_block_M+1:idx*num_block_M) =...
-%                         C_temp;
+                    switch SD_decoder_type
+                        case 1
+                            C_temp = SISO_minSum_layered_decoder(L_Rx_block,...
+                                Hamming_H,nlayer,niter,Offset);
+                            C = [C, C_temp<0];
+                        case 2
+                            C_temp = Hamming_SIHO_Chase_Decoder(L_Rx_block,...
+                                Hamming_H,3,10);
+                            C = [C, C_temp];
+                    end
+
                 end
                 C_rx = rx_PAM4_Decode(x_Rx);
                 C_rx2 = ~C_rx;
@@ -203,14 +209,11 @@ switch LBC_or_Polar
 %                 C_rx_BPSK = L_Rx_wdm_afterSD(jdx,:)<0;
                 for idx = 1:m*SE
                     x_Rx_block = C_rx_BPSK((idx-1)*num_block_M+1:idx*num_block_M);
-
-                    syndrome = mod(Hamming_H*(x_Rx_block<0).',2);
-                    [~,I] = ismember(Hamming_H.',syndrome.','rows');
-                    kdx = find(I==1);
-                    x_Rx_block(kdx) = -x_Rx_block(kdx);
+                    % capable of correcting one error
+                    x_Rx_block = Hamming_syndrome_decoder(x_Rx_block,Hamming_H);
                     x_Rx_new = [x_Rx_new, x_Rx_block];
                 end
-                nEr2 = [nEr2, sum(abs(Cin_mat(jdx,:)-(x_Rx_new<0)))];
+                nEr2 = [nEr2, sum(abs(Cin_mat(jdx,:)-x_Rx_new))];
             end
             nEr1 = [nEr1, mean(nEr1)];
             nEr2 = [nEr2, mean(nEr2)];

@@ -20,9 +20,9 @@ function L = compute_LLR(y,SE,ro)
             for j = 1:2^SE
                 bit_j = fliplr(de2bi(j-1,SE));
                 if bit_j(k) == 0
-                    Lnum = Lnum + exp(-ro*(abs(yi-Tx_Table(j))^2));
+                    Lnum = Lnum + exp(-ro/2*(abs(yi-Tx_Table(j))^2));
                 else
-                    Lden = Lden + exp(-ro*(abs(yi-Tx_Table(j))^2));
+                    Lden = Lden + exp(-ro/2*(abs(yi-Tx_Table(j))^2));
                 end
             end
             L((i-1)*SE+k) = log(Lnum/Lden);

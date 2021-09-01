@@ -34,6 +34,7 @@ function xh = decode_LDPC(L, H, iterations)
         end       
     end
     
-    % binary decision    
-    xh = L_total < 0;
+%     % binary decision    
+%     xh = L_total < 0;
+      xh = L_total;
 end
